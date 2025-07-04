@@ -6,12 +6,13 @@ import { emailService } from '@/lib/email';
 // POST /api/jobs/[id]/apply - Submit job application
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Check if job exists and is active
     const job = await prisma.jobPosting.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!job) {

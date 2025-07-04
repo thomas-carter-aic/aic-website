@@ -4,12 +4,13 @@ import { prisma } from '@/lib/prisma';
 // GET /api/jobs/[id] - Get specific job posting
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const job = await prisma.jobPosting.findUnique({
       where: {
-        id: params.id
+        id
       },
       include: {
         _count: {
