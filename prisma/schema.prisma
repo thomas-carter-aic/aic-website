@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model NewsletterSubscription {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  source      String?  // Where they signed up (homepage, about, etc.)
+  ipAddress   String?
+  userAgent   String?
+  status      SubscriptionStatus @default(PENDING)
+  crmId       String?  // SuiteCRM contact ID
+  crmSynced   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Audit trail
+  syncAttempts Int @default(0)
+  lastSyncAt   DateTime?
+  syncError    String?
+
+  @@map("newsletter_subscriptions")
+}
+
+enum SubscriptionStatus {
+  PENDING
+  CONFIRMED
+  UNSUBSCRIBED
+  FAILED
+}
+
+model SyncJob {
+  id            String    @id @default(cuid())
+  subscriptionId String
+  jobId         String    @unique // BullMQ job ID
+  status        JobStatus @default(PENDING)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3)
+  error         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  completedAt   DateTime?
+
+  subscription NewsletterSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("sync_jobs")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+}
